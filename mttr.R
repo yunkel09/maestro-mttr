@@ -104,22 +104,17 @@
 ##  ............................................................................
 ##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
 
- 
  # cargar catalogo de ownergroups validos
   ownergroups <- fread(input      = 'valid_ownergroups.csv',
                        data.table = FALSE)
- 
  
  # dejar solo los ownergroups que estan en el listado
   mttr.2 <- mttr.1 %>%
             filter(mttr.1$ownergroup %in% ownergroups$include)
 
-
- 
 ##  ............................................................................
 ##  EXCLUIR REGISTROS QUE NO APLIQUEN                                       ####
 
- 
  # leer listado de registros a excluir
   exclusion <- fread(input      = 'registros_excluidos.csv',
                      data.table = FALSE,
@@ -197,7 +192,6 @@
 ##  ............................................................................
 ##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                             ####
 
-        
  # cargar tabla lookup de ownergroups que deben compararse
  info.grupos <- fread(input      = 'info_grupos.csv',
                       data.table = FALSE)
@@ -227,8 +221,4 @@
                 tablename = 'MTTR',
                 rownames  = FALSE,
                 append    = TRUE)
-
- # cerrar conexion
- close(con)
-
 
