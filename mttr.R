@@ -1,5 +1,5 @@
 #   ____________________________________________________________________________
-#   WILLIAM                                                             ####
+#   WILLIAM                                                                 ####
 
   # cargar librerias
         
@@ -43,11 +43,9 @@
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
-
   # cambiar a minuscula nombres de columnas
   names(incidents)  %<>% tolower
   names(ttk)        %<>% tolower
-
 
   # definir que columnas se requieren
   colsToKeep.tx         <- c('tkstatusid',
@@ -73,7 +71,6 @@
 
 
  # transformar
- 
  incidents.1 <- incidents %>%
                 as_tibble() %>%
                 mutate_at('reportdate', parsear_fechas) %>%
@@ -100,7 +97,6 @@
                 mutate_at('description', toupper) %>%
                 arrange(reportdate)
 
-  
 ##  ............................................................................
 ##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
 
@@ -153,7 +149,6 @@
           
   }
           
-  
 ##  ............................................................................
 ##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                ####
 
