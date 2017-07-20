@@ -1,8 +1,7 @@
 #   ____________________________________________________________________________
-#   WILLIAM                                                                 ####
+#   MTTR                                                                    ####
 
   # cargar librerias
-        
   pkgs  <- c('tidyverse',
              'RODBC',
              'magrittr',
@@ -69,7 +68,6 @@
                              'ownergroup',
                              'decimal_duration')
 
-
  # transformar
  incidents.1 <- incidents %>%
                 as_tibble() %>%
@@ -82,7 +80,6 @@
                 mutate_at('changedate', parsear_fechas) %>%
                 filter(changedate >= "2017-01-01 00:00:00",
                        changedate <= "2017-05-28 23:59:59")
-
 
  # crear tabla maestra
   mttr.1 <-     ttk.1 %>%
