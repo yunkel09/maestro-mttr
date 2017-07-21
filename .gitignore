@@ -32,4 +32,7 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
+# CSV Files
+*.csv
+.csv
 .Rproj.user
