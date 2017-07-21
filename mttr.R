@@ -19,6 +19,7 @@
                             uid = 'wchavarria',
                             pwd = 'Tigo1234.')
 
+  # leer tabla incidentes
   incidents <-  sqlQuery(channel    = con, 
                          query      =   'SELECT
                                          DESCRIPTION,
@@ -29,6 +30,7 @@
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
+  # leer tabla ttks
   ttk       <-  sqlQuery(channel = con, 
                          query   = 'SELECT
                                       TKSTATUSID,
@@ -58,6 +60,7 @@
                              'status',
                              'changedate')
   
+  # definir el orden final de las columnas
   colOrder              <- c('tkstatusid',
                              'ticketid',
                              'description',
@@ -68,17 +71,18 @@
                              'ownergroup',
                              'decimal_duration')
 
- # transformar
+ # transformar incidentes modificando formatos de fechas
  incidents.1 <- incidents %>%
                 as_tibble() %>%
                 mutate_at('reportdate', parsear_fechas) %>%
                 filter(reportdate >= "2017-01-01 00:00:00",
                        reportdate <= "2017-05-28 23:59:59")
         
-  ttk.1 <-      ttk %>%
-                as_tibble() %>%
-                mutate_at('changedate', parsear_fechas) %>%
-                filter(changedate >= "2017-01-01 00:00:00",
+ # transformar tabla ttks modificando formato de fechas
+ ttk.1 <-      ttk %>%
+               as_tibble() %>%
+               mutate_at('changedate', parsear_fechas) %>%
+               filter(changedate >= "2017-01-01 00:00:00",
                        changedate <= "2017-05-28 23:59:59")
 
  # crear tabla maestra
@@ -173,6 +177,7 @@
                 mutate_at('rca_ts', str_sub, star = 1, end = 40)
   
   
+  # leer tabla de categorias invalidas de rca tigo star
   rm.ts <-      fread(input      = 'remove_category_th.csv',
                       data.table = FALSE,
                       select     = 'categoria')
@@ -197,7 +202,7 @@
 ##  ............................................................................
 ##  PREPARAR Y GUARDAR TABLA EN BD                                          ####
 
- # modificar los formatos de fecha       
+ # modificar los formatos de fecha para que sean texto       
  mttr.6 <- mttr.5 %>% mutate_if(is.POSIXct, as.character)
                   
  # guardar la primera vez con append = FALSE
