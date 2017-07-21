@@ -102,7 +102,7 @@
 ##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
 
  # cargar catalogo de ownergroups validos
-  ownergroups <- fread(input      = 'valid_ownergroups.csv',
+  ownergroups <- fread(input      = './files/01.- valid_ownergroups.csv',
                        data.table = FALSE)
  
  # dejar solo los ownergroups que estan en el listado
@@ -113,7 +113,7 @@
 ##  EXCLUIR REGISTROS QUE NO APLIQUEN                                       ####
 
  # leer listado de registros a excluir
-  exclusion <- fread(input      = 'registros_excluidos.csv',
+  exclusion <- fread(input      = './files/02.- registros_excluidos.csv',
                      data.table = FALSE,
                      select     = 'tkstatusid')
  
@@ -136,7 +136,7 @@
 ##  MODIFICAR LA DURACION DE REGISTROS                                      ####
 
   # leer listado de registros con nueva duracion
-  duracion <- fread(input      = 'actualizar_duracion.csv',
+  duracion <- fread(input      = './files/03.- actualizar_duracion.csv',
                     data.table = FALSE)
   
   # validar df
@@ -160,7 +160,7 @@
                        'description2')
   
  # leer tabla failure reporte
- tigo_star.1 <- fread(input      = 'failure_report.csv',
+ tigo_star.1 <- fread(input      = './files/04.- failure_report.csv',
                       na.strings = c("NA","N/A","null", ""),
                       data.table = FALSE,
                       select     = colsToKeep.ts)
@@ -178,7 +178,7 @@
   
   
   # leer tabla de categorias invalidas de rca tigo star
-  rm.ts <-      fread(input      = 'remove_category_th.csv',
+  rm.ts <-      fread(input      = './files/05.- remove_category_th.csv',
                       data.table = FALSE,
                       select     = 'categoria')
         
@@ -190,7 +190,7 @@
 ##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                             ####
 
  # cargar tabla lookup de ownergroups que deben compararse
- info.grupos <- fread(input      = 'info_grupos.csv',
+ info.grupos <- fread(input      = './files/06.- info_grupos.csv',
                       data.table = FALSE)
  
  # fusionar todo
