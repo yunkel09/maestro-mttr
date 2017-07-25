@@ -86,7 +86,7 @@
                        changedate <= "2017-05-28 23:59:59")
 
  # crear tabla maestra
-  mttr.1 <-     ttk.1 %>%
+ mttr.1 <-     ttk.1 %>%
                 left_join(incidents.1, by = 'ticketid') %>%
                 mutate(decimal_duration = hms_to_decimal(statustracking)) %>%
                 filter(decimal_duration > 0,
@@ -140,15 +140,18 @@
                     data.table = FALSE)
   
   # validar df
-  if(validar_df(duracion)){
-        
-        mttr.4 <- mttr.3 %>%
-                  mutate(new_decimal_duration =
-                         ifelse(test = mttr.3$tkstatusid %in% duracion$tkstatusid,
-                                yes  = duracion$duracion_decimal,
-                                no   = mttr.3$decimal_duration))  
-          
-  }
+  
+  
+  
+  # if(validar_df(duracion)){
+  #       
+  #       mttr.4 <- mttr.3 %>%
+  #                 mutate(new_decimal_duration =
+  #                        ifelse(test = mttr.3$tkstatusid %in% duracion$tkstatusid,
+  #                               yes  = duracion$duracion_decimal,
+  #                               no   = mttr.3$decimal_duration))  
+  #         
+  # }
           
 ##  ............................................................................
 ##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                ####
