@@ -17,8 +17,7 @@ validar_df <- function(df){
         
 ## tiene registros
   if(nrow(df) == 0){
-    
-    
+    return(FALSE)
   } 
         
   ## tkstatusid es un numero entero
