@@ -1,5 +1,5 @@
-#   ____________________________________________________________________________
-#   MTTR                                                                    ####
+#   ______________________________________________________________________________________
+#   MTTR                                                                              ####
 
   # cargar librerias
   pkgs  <- c('tidyverse',
@@ -98,8 +98,8 @@
                 mutate_at('description', toupper) %>%
                 arrange(reportdate)
 
-##  ............................................................................
-##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
+##  ......................................................................................
+##  FILTRADO POR OWNERGROUPS VALIDOS                                                  ####
 
  # cargar catalogo de ownergroups validos
   ownergroups <- fread(input      = './files/01.- valid_ownergroups.csv',
@@ -109,8 +109,8 @@
   mttr.2 <- mttr.1 %>%
             filter(mttr.1$ownergroup %in% ownergroups$include)
 
-##  ............................................................................
-##  EXCLUIR REGISTROS QUE NO APLIQUEN                                       ####
+##  ......................................................................................
+##  EXCLUIR REGISTROS QUE NO APLIQUEN                                                 ####
 
  # leer listado de registros a excluir
   exclusion <- fread(input      = './files/02.- registros_excluidos.csv',
@@ -159,8 +159,8 @@
   }  
         
           
-##  ............................................................................
-##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                ####
+##  ......................................................................................
+##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                          ####
 
   # definir columnas necesarias
   colsToKeep.ts   <- c('ticketid',
@@ -195,8 +195,8 @@
   tigo_star.3 <- tigo_star.2 %>%
                  filter(!(tigo_star.2$rca_ts %in% rm.ts$categoria))
 
-##  ............................................................................
-##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                             ####
+##  ......................................................................................
+##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                                       ####
 
  # cargar tabla lookup de ownergroups que deben compararse
  info.grupos <- fread(input      = './files/06.- info_grupos.csv',
@@ -208,8 +208,8 @@
                 left_join(tigo_star.3, by = 'ticketid')
                                                 
         
-##  ............................................................................
-##  PREPARAR Y GUARDAR TABLA EN BD                                          ####
+##  ......................................................................................
+##  PREPARAR Y GUARDAR TABLA EN BD                                                    ####
 
  # modificar los formatos de fecha para que sean texto       
  mttr.6 <- mttr.5 %>% mutate_if(is.POSIXct, as.character)
