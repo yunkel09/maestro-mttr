@@ -17,8 +17,8 @@ validar_df <- function(df){
         
 ## tiene registros
   if(nrow(df) == 0){
-    stop('Los valores de duracion decimal deben de ser numericos',
-         call. = FALSE)        
+    
+    
   } 
         
   ## tkstatusid es un numero entero
