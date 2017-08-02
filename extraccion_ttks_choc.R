@@ -26,17 +26,17 @@
 ##  DESCARGAR ARCHIVOS                                                      ####
 
   # data general
-  general <- fread(input            = 'data_general_mttr.csv', 
+  general <- fread(input            = './files/historico_ttks/01.- historico_mttr.csv', 
                    stringsAsFactors = FALSE,
                    data.table       = FALSE)
 
   # data con problemas en el formato de fecha
-  buc <-     fread(input = 'data_buc.csv',
+  buc <-     fread(input = './files/historico_ttks/02.- ttks_buc.csv',
                    data.table = FALSE,
                    stringsAsFactors = FALSE) %>% as.tibble
 
   # cargar tabla lookup de ownergroups que deben compararse
-  info.grupos <- fread(input      = 'info_grupos.csv',
+  info.grupos <- fread(input      = './files/06.- info_grupos.csv',
                        data.table = FALSE)
   
   
@@ -67,32 +67,37 @@
                         mutate(rca_ts = NA, ttk_tigo_star = NA) %>%
                         arrange(reportdate) %>%
                         mutate_at('tkstatusid', as.integer) %>%
-                        select(orden_columnas)
+                        select(orden_cols) %>%
+                        mutate_if(is.character, toupper) %>%
+                        mutate_at('description', str_sub, star = 1, end = 40)
+  
+  
+  # Este df es para guardarse en base de datos
+  maestro.1 <- maestro %>% mutate_at(vars(reportdate, changedate), as.character)
+                      
                 
 
-
-
-
-
-
-maestro.1 <- maestro %>% mutate(tkstatusid = row.names(.),
-                                new_decimal_duration = decimal_duration) %>%
-        select(colOrder1) %>%
-        arrange(reportdate)
-
-
 # borrar el resto de df
-rm(list = setdiff(ls(), 'maestro.1'))
+rm(list = setdiff(ls(), c('maestro.1', 'maestro')))
 
-
-# puntos pendientes
-# 1. agregar columna ttkstatusid a maestro y usar row.names
-# 2. agregar columna new.decimal.duration igualandolo a la hora
-# 3. guardar tanate maestro en server
-
+# abrir conexion 
+con       <-  odbcConnect(dsn = 'yunkel',
+                          uid = 'wchavarria',
+                          pwd = 'Tigo1234.')
 
 
 
+# guardar la primera vez con append = FALSE
+sqlSave(channel   = con,
+        dat       = maestro.1,
+        tablename = 'MTTR',
+        rownames  = FALSE,
+        append    = FALSE)
+
+
+
+# close con
+close(con)
 
 
 

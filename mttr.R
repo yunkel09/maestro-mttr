@@ -214,12 +214,7 @@
  # modificar los formatos de fecha para que sean texto       
  mttr.6 <- mttr.5 %>% mutate_if(is.POSIXct, as.character)
                   
- # guardar la primera vez con append = FALSE
-        sqlSave(channel   = con,
-                dat       = mttr.6,
-                tablename = 'MTTR',
-                rownames  = FALSE,
-                append    = FALSE)
+ 
         
  # adjuntar fragementos parciales
         sqlSave(channel   = con,
