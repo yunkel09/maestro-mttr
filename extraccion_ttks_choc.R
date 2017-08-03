@@ -2,10 +2,10 @@
 #   ARCHIVO MAESTRO CHOC A BD                                               ####
 
   # paquetes necesarios
-  paquetes <- c('lubridate', 'tidyverse', 'magrittr', 'data.table')
+  paquetes <- c('lubridate', 'tidyverse', 'magrittr', 'data.table', 'stringr', 'RODBC')
         
   # cargar librerías
-  sapply(paquetes, require, character.only = TRUE)
+  sapply(paquetes, require, character.only = TRUE, quiet = TRUE)
   
   # cargar funciones
   source('custom_functions.R')
@@ -30,10 +30,6 @@
                    stringsAsFactors = FALSE,
                    data.table       = FALSE)
 
-  # data con problemas en el formato de fecha
-  buc <-     fread(input = './files/historico_ttks/02.- ttks_buc.csv',
-                   data.table = FALSE,
-                   stringsAsFactors = FALSE) %>% as.tibble
 
   # cargar tabla lookup de ownergroups que deben compararse
   info.grupos <- fread(input      = './files/06.- info_grupos.csv',
@@ -44,23 +40,9 @@
 ##  TRANSFORMAR ARCHIVO BUC                                                 ####
 
   
-  # modificar registros de forma manual
-  buc[buc$changedate == 'Apr 1, 2016 7:09 AM', 'changedate'] <- 'Apr 01, 2016 7:09 AM'
-  buc[buc$changedate == '11/03/2016', 'changedate']          <- 'Mar 11, 2016 08:00 AM'
-
-
-  # corregir fechas en archivo buc
-  buc.1 <-buc %>% 
-          mutate_at(vars(reportdate, changedate), corregir_fecha) %>%
-          arrange(reportdate)
-
-  # cambiar formato de fecha en archivo general
-  general.1 <-  general %>%
-                mutate_at(vars(reportdate, changedate),
-                          dmy_hm, tz = 'America/Guatemala')
 
   # fusionar todo        
-  maestro       <-      bind_rows(general.1, buc.1) %>%
+  maestro       <-      general %>%
                         mutate(tkstatusid = row.names(.),
                                new_decimal_duration = decimal_duration) %>%
                         left_join(info.grupos, by = 'ownergroup') %>%
@@ -72,10 +54,6 @@
                         mutate_at('description', str_sub, star = 1, end = 40)
   
   
-  # Este df es para guardarse en base de datos
-  maestro.1 <- maestro %>% mutate_at(vars(reportdate, changedate), as.character)
-                      
-                
 
 # borrar el resto de df
 rm(list = setdiff(ls(), c('maestro.1', 'maestro')))
@@ -89,7 +67,7 @@ con       <-  odbcConnect(dsn = 'yunkel',
 
 # guardar la primera vez con append = FALSE
 sqlSave(channel   = con,
-        dat       = maestro.1,
+        dat       = maestro,
         tablename = 'MTTR',
         rownames  = FALSE,
         append    = FALSE)
