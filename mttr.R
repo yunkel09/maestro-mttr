@@ -26,7 +26,7 @@
                                          INTERNALPRIORITY,
                                          REPORTDATE,
                                          TICKETID
-                                         FROM dbo.INCIDENT',
+                                         FROM TIVOLI.INCIDENT',
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
@@ -40,7 +40,7 @@
                                       TICKETID,
                                       STATUS,                
                                       CHANGEDATE
-                                    FROM dbo.TKSTATUS',
+                                    FROM TIVOLI.TKSTATUS',
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
@@ -74,19 +74,24 @@
  # transformar incidentes modificando formatos de fechas
  incidents.1 <- incidents %>%
                 as_tibble() %>%
-                mutate_at('reportdate', parsear_fechas) %>%
-                filter(reportdate >= "2017-01-01 00:00:00",
-                       reportdate <= "2017-05-28 23:59:59")
+                mutate_at('reportdate', parsear_fechas) 
+ 
+ 
+ # %>%
+ #                filter(reportdate >= "2017-01-01 00:00:00",
+ #                       reportdate <= "2017-05-28 23:59:59")
         
  # transformar tabla ttks modificando formato de fechas
  ttk.1 <-      ttk %>%
                as_tibble() %>%
-               mutate_at('changedate', parsear_fechas) %>%
-               filter(changedate >= "2017-01-01 00:00:00",
-                       changedate <= "2017-05-28 23:59:59")
+               mutate_at('changedate', parsear_fechas)
+ 
+ # %>%
+ #               filter(changedate >= "2017-01-01 00:00:00",
+ #                       changedate <= "2017-05-28 23:59:59")
 
  # crear tabla maestra
- mttr.1 <-     ttk.1 %>%
+ mttr.1 <-      ttk.1 %>%
                 left_join(incidents.1, by = 'ticketid') %>%
                 mutate(decimal_duration = hms_to_decimal(statustracking)) %>%
                 filter(decimal_duration > 0,
@@ -165,24 +170,38 @@
   # definir columnas necesarias
   colsToKeep.ts   <- c('ticketid',
                        'type',
-                       'siteid5',
-                       'description2')
+                       'siteid',
+                       'description')
   
  # leer tabla failure reporte
- tigo_star.1 <- fread(input      = './files/04.- failure_report.csv',
-                      na.strings = c("NA","N/A","null", ""),
-                      data.table = FALSE,
-                      select     = colsToKeep.ts)
-  
+ # tigo_star.1 <- fread(input      = './files/04.- failure_report.csv',
+ #                      na.strings = c("NA","N/A","null", ""),
+ #                      data.table = FALSE,
+ #                      select     = colsToKeep.ts)
+ 
+ tigo_star.1 <-  sqlQuery(channel    = con, 
+                      query      =   'SELECT
+                                      FAILURE_REPORT.TICKETID,
+                                      FAILURE_REPORT.TYPE,
+                                      FAILURE_REPORT.DESCRIPTION,
+                                      INCIDENT.SITEID
+                                      FROM TIVOLI.FAILURE_REPORT
+                                      JOIN TIVOLI.INCIDENT ON
+                                      TIVOLI.FAILURE_REPORT.TICKETID = TIVOLI.INCIDENT.TICKETID',
+                      na.strings = '',
+                      stringsAsFactors = FALSE)
+ 
+ names(tigo_star.1) %<>% tolower
+ 
  # procesar tabla
  tigo_star.2 <- tigo_star.1 %>%
-                filter(siteid5 == "TH",
+                filter(siteid == "TH",
                        type    == "CAUSE",
-                       !is.na(description2)) %>%
-                mutate_at('description2', toupper) %>%
+                       !is.na(description)) %>%
+                mutate_at('description', toupper) %>%
                 mutate(ttk_tigo_star = "NO APLICA") %>%
-                select(-type, -siteid5) %>%
-                rename(rca_ts = description2) %>%
+                select(-type, -siteid) %>%
+                rename(rca_ts = description) %>%
                 mutate_at('rca_ts', str_sub, star = 1, end = 40)
   
   
