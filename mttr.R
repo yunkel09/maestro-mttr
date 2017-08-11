@@ -1,5 +1,5 @@
-#   ______________________________________________________________________________________
-#   MTTR                                                                              ####
+#   ____________________________________________________________________________
+#   MTTR                                                                    ####
 
   # cargar librerias
   pkgs  <- c('tidyverse',
@@ -103,8 +103,8 @@
                 mutate_at('description', toupper) %>%
                 arrange(reportdate)
 
-##  ......................................................................................
-##  FILTRADO POR OWNERGROUPS VALIDOS                                                  ####
+##  ............................................................................
+##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
 
  # cargar catalogo de ownergroups validos
   ownergroups <- fread(input      = './files/01.- valid_ownergroups.csv',
@@ -114,8 +114,8 @@
   mttr.2 <- mttr.1 %>%
             filter(mttr.1$ownergroup %in% ownergroups$include)
 
-##  ......................................................................................
-##  EXCLUIR REGISTROS QUE NO APLIQUEN                                                 ####
+##  ............................................................................
+##  EXCLUIR REGISTROS QUE NO APLIQUEN                                       ####
 
  # leer listado de registros a excluir
   exclusion <- fread(input      = './files/02.- registros_excluidos.csv',
@@ -127,7 +127,8 @@
           mttr.3 <- mttr.2
 
   } else if(!is.integer(exclusion$tkstatusid)) {
-                        stop('Los valores de tkstatusid deben de ser numeros enteros',
+                        stop('Los valores de tkstatusid deben de
+                             ser numeros enteros',
                              call. = FALSE)
          } else {
 
@@ -137,19 +138,19 @@
 
                 }
 
-##  ......................................................................................
-##  MODIFICAR LA DURACION DE REGISTROS                                                ####
+##  ............................................................................
+##  MODIFICAR LA DURACION DE REGISTROS                                      ####
 
   # leer listado de registros con nueva duracion
   duracion <- fread(input      = './files/03.- actualizar_duracion.csv',
                     data.table = FALSE)
   
   # validar df
-  #' Si la funcion validar_df retorna FALSE, entonces solo se copia el mismo df mttr.3 y
-  #' se le agrega la columna new_decimal_duration como una copia de la columna 'decimal_
-  #' duration'.  Si la funcion retorna TRUE, entonces se agrega la misma columna, pero
-  #' busca los tkstatusid y coloca las duraciones modificadas en la columna new_decimal
-  #' duration.
+  #' Si la funcion validar_df retorna FALSE, entonces solo se copia el mismo
+  #' df mttr.3 y se le agrega la columna new_decimal_duration como una copia
+  #' de la columna 'decimal_duration'.  Si la funcion retorna TRUE, entonces
+  #' se agrega la misma columna, pero busca los tkstatusid y coloca las
+  #' duraciones modificadas en la columna new_decimal duration.
   
   if(!validar_df(duracion)){
     mttr.4 <- mttr.3 %>%
@@ -158,14 +159,14 @@
   } else {
     mttr.4 <- mttr.3 %>%
               mutate(new_decimal_duration =
-                           ifelse(test = mttr.3$tkstatusid %in% duracion$tkstatusid,
-                                  yes  = duracion$duracion_decimal,
-                                  no   = mttr.3$decimal_duration))
+                     ifelse(test = mttr.3$tkstatusid %in% duracion$tkstatusid,
+                            yes  = duracion$duracion_decimal,
+                            no   = mttr.3$decimal_duration))
   }  
         
           
-##  ......................................................................................
-##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                          ####
+##  ............................................................................
+##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                ####
 
  # definir columnas necesarias
  tigo_star.1 <-  sqlQuery(channel     = con, 
@@ -204,8 +205,8 @@
   tigo_star.3 <- tigo_star.2 %>%
                  filter(!(tigo_star.2$rca_ts %in% rm.ts$categoria))
 
-##  ......................................................................................
-##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                                       ####
+##  ............................................................................
+##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                             ####
 
  # cargar tabla lookup de ownergroups que deben compararse
  info.grupos <- fread(input      = './files/06.- info_grupos.csv',
@@ -216,15 +217,12 @@
                 left_join(info.grupos, by = 'ownergroup') %>%
                 left_join(tigo_star.3, by = 'ticketid')
                                                 
-        
-##  ......................................................................................
-##  PREPARAR Y GUARDAR TABLA EN BD                                                    ####
+##  ............................................................................
+##  PREPARAR Y GUARDAR TABLA EN BD                                          ####
 
  # modificar los formatos de fecha para que sean texto       
  mttr.6 <- mttr.5 %>% mutate_if(is.POSIXct, as.character)
                   
- 
-        
  # adjuntar fragementos parciales
         sqlSave(channel   = con,
                 dat       = mttr.6.febrero,
