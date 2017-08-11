@@ -167,28 +167,18 @@
 ##  ......................................................................................
 ##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                          ####
 
-  # definir columnas necesarias
-  colsToKeep.ts   <- c('ticketid',
-                       'type',
-                       'siteid',
-                       'description')
-  
- # leer tabla failure reporte
- # tigo_star.1 <- fread(input      = './files/04.- failure_report.csv',
- #                      na.strings = c("NA","N/A","null", ""),
- #                      data.table = FALSE,
- #                      select     = colsToKeep.ts)
- 
- tigo_star.1 <-  sqlQuery(channel    = con, 
-                      query      =   'SELECT
-                                      FAILURE_REPORT.TICKETID,
-                                      FAILURE_REPORT.TYPE,
-                                      FAILURE_REPORT.DESCRIPTION,
-                                      INCIDENT.SITEID
-                                      FROM TIVOLI.FAILURE_REPORT
-                                      JOIN TIVOLI.INCIDENT ON
-                                      TIVOLI.FAILURE_REPORT.TICKETID = TIVOLI.INCIDENT.TICKETID',
-                      na.strings = '',
+ # definir columnas necesarias
+ tigo_star.1 <-  sqlQuery(channel     = con, 
+                                query = 'SELECT
+                                         FAILURE_REPORT.TICKETID,
+                                         FAILURE_REPORT.TYPE,
+                                         FAILURE_REPORT.DESCRIPTION,
+                                         INCIDENT.SITEID
+                                         FROM TIVOLI.FAILURE_REPORT
+                                         JOIN TIVOLI.INCIDENT ON
+                                         TIVOLI.FAILURE_REPORT.TICKETID =
+                                         TIVOLI.INCIDENT.TICKETID',
+                            na.strings = '',
                       stringsAsFactors = FALSE)
  
  names(tigo_star.1) %<>% tolower
