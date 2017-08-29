@@ -25,10 +25,15 @@
                                          DESCRIPTION,
                                          INTERNALPRIORITY,
                                          REPORTDATE,
-                                         TICKETID
+                                         TICKETID,
+                                         REPORTEDPRIORITY,
+                                         INDICATEDPRIORITY,
+                                         ISGLOBAL,
+                                         RELATEDTOGLOBAL
                                          FROM TIVOLI.INCIDENT',
                          na.strings = '',
                          stringsAsFactors = FALSE)
+  
   
   # leer tabla ttks
   ttk       <-  sqlQuery(channel = con, 
@@ -48,18 +53,6 @@
   names(incidents)  %<>% tolower
   names(ttk)        %<>% tolower
 
-  # definir que columnas se requieren
-  colsToKeep.tx         <- c('tkstatusid',
-                             'ticketid',
-                             'description',
-                             'reportdate',
-                             'internalpriority',
-                             'siteid',
-                             'ownergroup',
-                             'statustracking',
-                             'status',
-                             'changedate')
-  
   # definir el orden final de las columnas
   colOrder              <- c('tkstatusid',
                              'ticketid',
@@ -69,27 +62,22 @@
                              'internalpriority',
                              'siteid',
                              'ownergroup',
-                             'decimal_duration')
+                             'decimal_duration',
+                             'reportedpriority',
+                             'indicatedpriority',
+                             'isglobal',
+                             'relatedtoglobal')
 
  # transformar incidentes modificando formatos de fechas
  incidents.1 <- incidents %>%
                 as_tibble() %>%
                 mutate_at('reportdate', parsear_fechas) 
  
- 
- # %>%
- #                filter(reportdate >= "2017-01-01 00:00:00",
- #                       reportdate <= "2017-05-28 23:59:59")
-        
  # transformar tabla ttks modificando formato de fechas
  ttk.1 <-      ttk %>%
                as_tibble() %>%
                mutate_at('changedate', parsear_fechas)
  
- # %>%
- #               filter(changedate >= "2017-01-01 00:00:00",
- #                       changedate <= "2017-05-28 23:59:59")
-
  # crear tabla maestra
  mttr.1 <-      ttk.1 %>%
                 left_join(incidents.1, by = 'ticketid') %>%
@@ -205,6 +193,31 @@
   tigo_star.3 <- tigo_star.2 %>%
                  filter(!(tigo_star.2$rca_ts %in% rm.ts$categoria))
 
+### . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ..
+### DEFINIR ORDEN FINAL DE COLUMNAS                                         ####
+  
+  FinalOrder            <- c('tkstatusid',
+                             'ticketid',
+                             'description',
+                             'reportdate',
+                             'changedate',
+                             'internalpriority',
+                             'siteid',
+                             'ownergroup',
+                             'decimal_duration',
+                             'new_decimal_duration',
+                             'empresa',
+                             'sede',
+                             'area',
+                             'target',
+                             'region',
+                             'rca_ts',
+                             'ttk_tigo_star',
+                             'reportedpriority',
+                             'indicatedpriority',
+                             'isglobal',
+                             'relatedtoglobal')
+  
 ##  ............................................................................
 ##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                             ####
 
@@ -215,8 +228,9 @@
  # fusionar todo
  mttr.5 <-      mttr.4 %>%
                 left_join(info.grupos, by = 'ownergroup') %>%
-                left_join(tigo_star.3, by = 'ticketid')
-                                                
+                left_join(tigo_star.3, by = 'ticketid')   %>%
+                select(FinalOrder)
+ 
 ##  ............................................................................
 ##  PREPARAR Y GUARDAR TABLA EN BD                                          ####
 

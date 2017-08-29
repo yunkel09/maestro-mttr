@@ -26,7 +26,7 @@
                   'changedate', 'internalpriority', 'siteid', 'ownergroup',
                   'decimal_duration', 'new_decimal_duration', 'mttr_valido_ts',
                   'empresa', 'sede', 'area', 'target', 'region', 'rca_ts',
-                  'ttk_tigo_star', 'reportedpriority')
+                  'ttk_tigo_star')
 
 ##  ............................................................................
 ##  DESCARGAR ARCHIVOS                                                      ####
@@ -47,7 +47,7 @@
 
   general.1 <- general %>%
                mutate_at(vars(reportdate, changedate),
-                         ymd_hm, tz = 'America/Guatemala')
+                         mdy_hm, tz = 'America/Guatemala')
   
   # seleccionar los ttks que sean de 2017 y que no pertenezcan a TH
   general.2 <- general.1 %>%
@@ -120,6 +120,7 @@
                         select(orden_cols) %>%
                         mutate_if(is.character, toupper) %>%
                         mutate_at('description', str_sub, star = 1, end = 40)
+                        
                         
               
   # cambiar maestro para que sea posible guardarlo en la base de datos
