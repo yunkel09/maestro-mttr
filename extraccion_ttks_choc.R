@@ -21,6 +21,7 @@
   # opciones generales
   options(str = strOptions(vec.len = 2))
   
+
 ##  ............................................................................
 ##  DESCARGAR ARCHIVOS                                                      ####
 
@@ -102,26 +103,35 @@
   
   tmp <- bind_rows(general.3, th.1)               
   
+##  ............................................................................
+##  DEFINIR ORDEN DE COLUMNAS ARCHIVO FINAL                                 ####
+  
+  orden_cols <- c('ticketid', 'description', 'reportdate',
+                  'changedate', 'internalpriority', 'siteid', 'ownergroup',
+                  'decimal_duration', 'new_decimal_duration', 'mttr_valido_ts',
+                  'empresa', 'sede', 'area', 'target', 'region', 'rca_ts',
+                  'ttk_tigo_star')
+  
+
+##  ............................................................................
+##  FUSIONAR                                                                ####
+
   
   # fusionar todo y agregar la info de los grupos.        
-  maestro       <-      tmp %>%
-                        arrange(reportdate) %>%
-                        mutate(new_decimal_duration = decimal_duration) %>%
-                        left_join(info.grupos, by = 'ownergroup') %>%
-                        mutate(rca_ts = NA, ttk_tigo_star = NA) %>%
-                        mutate_at('tkstatusid', as.integer) %>%
-                        select(orden_cols) %>%
-                        mutate_if(is.character, toupper) %>%
-                        mutate_at('description', str_sub, star = 1, end = 40)
+  maestro  <-      tmp %>%
+                   mutate(new_decimal_duration = decimal_duration) %>%
+                   arrange(reportdate) %>%
+                   left_join(info.grupos, by = 'ownergroup') %>%
+                   mutate(rca_ts = NA, ttk_tigo_star = NA) %>%
+                   select(orden_cols) %>%
+                   mutate_if(is.character, toupper) %>%
+                   mutate_at('description', str_sub, star = 1, end = 40) %>%
+                   mutate_at(vars(reportdate, changedate), as.character)
                         
-                        
-              
-  # cambiar maestro para que sea posible guardarlo en la base de datos
-  maestro.1 <- maestro %>%
-               mutate_at(vars(reportdate, changedate), as.character)
-
+  
   # borrar el resto de df
-  rm(list = setdiff(ls(), c('incidents', 'ttk')))
+  rm(list = setdiff(ls(), 'maestro'))
+  
   
   # abrir conexion 
   con       <-  odbcConnect(dsn = 'yunkel',
@@ -129,18 +139,48 @@
                             pwd = 'Tigo1234.')
   
   
+  varspec <- c('int',             # ticketid
+               'varchar(40)',    # description
+               'datetime2(0)',    # reportdate
+               'datetime2(0)',    # changedate
+               'int',             # internalpriority
+               'varchar(20)',     # siteid
+               'varchar(20)',     # ownergroup
+               'float',           # decimal_duration
+               'float',           # new_decimal_duration
+               'varchar(20)',     # mttr_valido_ts
+               'varchar(20)',     # empresa
+               'varchar(20)',     # sede
+               'varchar(20)',     # area
+               'float',           # target
+               'varchar(20)',     # region
+               'varchar(20)',     # rca_ts
+               'varchar(20)')     # ttk_tigo_star
+  
+  
+  names(varspec) <- names(maestro)
   
   # guardar la primera vez con append = FALSE
   sqlSave(channel   = con,
-          dat       = maestro.1,
+          dat       = maestro,
+          rownames  = 'tkstatusid', 
           tablename = 'MTTR',
-          rownames  = 'tkstatusid',
-          append    = FALSE)
+          append    = FALSE, 
+          addPK     = TRUE,
+          varTypes  = varspec,
+          fast      = TRUE) 
 
 
-
-# close con
-close(con)
+  # borrar tabla
+  sqlDrop(channel = con, sqtable = 'MTTR', errors = FALSE)
+  
+  
+  
+  
+  
+  
+  # close con
+  close(con)
 
 
 
