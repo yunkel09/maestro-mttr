@@ -112,8 +112,7 @@
   # fusionar todo y agregar la info de los grupos.        
   maestro       <-      tmp %>%
                         arrange(reportdate) %>%
-                        mutate(tkstatusid = row.names(.),
-                               new_decimal_duration = decimal_duration) %>%
+                        mutate(new_decimal_duration = decimal_duration) %>%
                         left_join(info.grupos, by = 'ownergroup') %>%
                         mutate(rca_ts = NA, ttk_tigo_star = NA) %>%
                         mutate_at('tkstatusid', as.integer) %>%
