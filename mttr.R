@@ -95,8 +95,16 @@
 ##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
 
  # cargar catalogo de ownergroups validos
-  ownergroups <- fread(input      = './files/01.- valid_ownergroups.csv',
-                       data.table = FALSE)
+  # ownergroups <- fread(input      = './files/01.- valid_ownergroups.csv',
+  #                      data.table = FALSE)
+ 
+ ownergroups     <- sqlQuery(channel = con, 
+                        query   = 'SELECT
+                        OWNERGROUP
+                        FROM shd.contratista_owner_group WHERE ACTIVO = 1',
+                        na.strings = '',
+                        stringsAsFactors = FALSE)
+ 
  
  # dejar solo los ownergroups que estan en el listado
   mttr.2 <- mttr.1 %>%
@@ -236,11 +244,12 @@
 
  # modificar los formatos de fecha para que sean texto       
  mttr.6 <- mttr.5 %>% mutate_if(is.POSIXct, as.character)
-                  
- # adjuntar fragementos parciales
-        sqlSave(channel   = con,
-                dat       = mttr.6.febrero,
-                tablename = 'MTTR',
-                rownames  = FALSE,
-                append    = TRUE)
+
+ # cerrar conexion
+ close(con)
+ 
+ # borrar objetos innecesarios                  
+ rm(list = setdiff(ls(), 'mttr.6'))
+ 
+ 
 
