@@ -32,8 +32,19 @@
 
 
   # cargar tabla lookup de ownergroups que deben compararse
-  info.grupos <- fread(input      = './files/06.- info_grupos.csv',
-                       data.table = FALSE)
+  # info.grupos <- fread(input      = './files/06.- info_grupos.csv',
+  #                      data.table = FALSE)
+  # 
+  
+  ownergroups     <- sqlQuery(channel = con, 
+                              query   = 'SELECT O.ownergroup,
+                              C.NOMBRE empresa, O.sede, C.PLANTA area,
+                              O.MTTR_TARGET target, O.region,
+                              O.TEC_SOLUTION tec_solution
+                              FROM SHD.CONTRATISTA_OWNER_GROUP O
+                              JOIN SHD.CONTRATISTA C ON O.CONTRATISTA_ID = C.ID',
+                              na.strings = '',
+                              stringsAsFactors = FALSE)
   
   
 ##  ............................................................................
@@ -51,16 +62,21 @@
   # seleccionar todos los ttks de 2016, incluyendo los de TH
   general.2 <- general %>%
                filter(reportdate < '2016-12-31 23:59')
-              
-  # unificar pero sin ttks de TH en 2017
-  general.3 <- bind_rows(general.1, general.2) %>%
-               arrange(reportdate) %>%
-               mutate(mttr_valido_ts = NA)
   
   # leer data de th pre-procesada
   th        <- fread(input            = './files/general_th.csv', 
                      stringsAsFactors = FALSE,
                      data.table       = FALSE)
+               
+  
+  # unificar pero sin ttks de TH en 2017
+  general.3 <- bind_rows(general.1, general.2) %>%
+               arrange(reportdate) %>%
+               mutate(ttk_tigo_star = NA)
+               
+               
+  
+
   
   col_order <- c('ticketid',
                  'description',
@@ -70,7 +86,7 @@
                  'ownergroup',
                  'siteid',
                  'decimal_duration',
-                 'mttr_valido_ts')
+                 'ttk_tigo_star')
   
   
   
@@ -79,7 +95,7 @@
   
   th.1 <- th %>%
           mutate(internalpriority = NA) %>%
-          rename(mttr_valido_ts = mttr_valido) %>%
+          rename(ttk_tigo_star = mttr_valido) %>%
           mutate_at(vars(reportdate, changedate),
                          dmy_hm, tz = 'America/Guatemala') %>%
           filter(reportdate <= '2017-07-15 17:04:00') %>%
@@ -108,25 +124,47 @@
   
   orden_cols <- c('ticketid', 'description', 'reportdate',
                   'changedate', 'internalpriority', 'siteid', 'ownergroup',
-                  'decimal_duration', 'new_decimal_duration', 'mttr_valido_ts',
-                  'empresa', 'sede', 'area', 'target', 'region', 'rca_ts',
-                  'ttk_tigo_star')
+                  'decimal_duration', 'new_decimal_duration', 
+                  'empresa', 'sede', 'area', 'target', 'region', 'tec_solution',
+                  'rca_ts','ttk_tigo_star','reportedpriority',
+                  'indicatedpriority', 'isglobal', 'relatedtoglobal')
   
 
 ##  ............................................................................
 ##  FUSIONAR                                                                ####
 
+  # leer tabla incidentes
+  historico <-  sqlQuery(channel    = con, 
+                         query      =   "SELECT
+                                        TICKETID,
+                                        REPORTEDPRIORITY,
+                                        INDICATEDPRIORITY,
+                                        ISGLOBAL,
+                                        RELATEDTOGLOBAL
+                                        FROM TIVOLI.INCIDENT WHERE
+                                        REPORTDATE BETWEEN
+                                        '2016-01-01 00:00:00'
+                                        AND
+                                        '2017-07-15 17:04:00'",
+                         na.strings = '',
+                         stringsAsFactors = FALSE)
+  
+  names(historico) <- tolower(names(historico))
   
   # fusionar todo y agregar la info de los grupos.        
   maestro  <-      tmp %>%
                    mutate(new_decimal_duration = decimal_duration) %>%
                    arrange(reportdate) %>%
-                   left_join(info.grupos, by = 'ownergroup') %>%
-                   mutate(rca_ts = NA, ttk_tigo_star = NA) %>%
+                   left_join(ownergroups, by = 'ownergroup') %>%
+                   left_join(historico, by = 'ticketid') %>%
+                   mutate(rca_ts = NA) %>%
                    select(orden_cols) %>%
                    mutate_if(is.character, toupper) %>%
-                   mutate_at('description', str_sub, star = 1, end = 40) %>%
-                   mutate_at(vars(reportdate, changedate), as.character)
+                   mutate_at('description', str_sub, star = 1, end = 40)
+    
+                   
+  maestro$ttk_tigo_star <- ifelse(test = maestro$ttk_tigo_star == 'SI' | is.na(maestro$ttk_tigo_star), yes = 'SI APLICA', no = 'NO APLICA')                 
+                  
                         
   
   # borrar el resto de df
@@ -148,14 +186,18 @@
                'varchar(20)',     # ownergroup
                'float',           # decimal_duration
                'float',           # new_decimal_duration
-               'varchar(20)',     # mttr_valido_ts
                'varchar(20)',     # empresa
                'varchar(20)',     # sede
                'varchar(20)',     # area
                'float',           # target
                'varchar(20)',     # region
+               'varchar(20)',     # tec_solution
                'varchar(20)',     # rca_ts
-               'varchar(20)')     # ttk_tigo_star
+               'varchar(20)',     # ttk_tigo_star
+               'int',            
+               'int',
+               'int',
+               'int')     
   
   
   names(varspec) <- names(maestro)
@@ -164,7 +206,7 @@
   sqlSave(channel   = con,
           dat       = maestro,
           rownames  = 'tkstatusid', 
-          tablename = 'MTTR',
+          tablename = 'tivoli.mttr',
           append    = FALSE, 
           addPK     = TRUE,
           varTypes  = varspec,
@@ -172,7 +214,7 @@
 
 
   # borrar tabla
-  sqlDrop(channel = con, sqtable = 'MTTR', errors = FALSE)
+  sqlDrop(channel = con, sqtable = 'tivoli.mttr', errors = FALSE)
   
   
   

@@ -21,7 +21,7 @@
 
   # leer tabla incidentes
   incidents <-  sqlQuery(channel    = con, 
-                         query      =   'SELECT
+                         query      =   "SELECT
                                          DESCRIPTION,
                                          INTERNALPRIORITY,
                                          REPORTDATE,
@@ -30,14 +30,16 @@
                                          INDICATEDPRIORITY,
                                          ISGLOBAL,
                                          RELATEDTOGLOBAL
-                                         FROM TIVOLI.INCIDENT',
+                                         FROM TIVOLI.INCIDENT WHERE
+                                         REPORTDATE BETWEEN '2017-07-15 17:05:59'
+                                         AND '2017-08-25 23:59:59'",
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
   
   # leer tabla ttks
   ttk       <-  sqlQuery(channel = con, 
-                         query   = 'SELECT
+                         query   = "SELECT
                                       TKSTATUSID,
                                       OWNERGROUP,
                                       SITEID,
@@ -45,7 +47,11 @@
                                       TICKETID,
                                       STATUS,                
                                       CHANGEDATE
-                                    FROM TIVOLI.TKSTATUS',
+                                      FROM TIVOLI.TKSTATUS WHERE TICKETID IN (SELECT
+                                          TICKETID
+                                          FROM TIVOLI.INCIDENT WHERE
+                                          REPORTDATE BETWEEN '2017-07-15 17:05:59'
+                                          AND '2017-08-25 23:59:59')",
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
@@ -68,20 +74,21 @@
                              'isglobal',
                              'relatedtoglobal')
 
- # transformar incidentes modificando formatos de fechas
- incidents.1 <- incidents %>%
-                as_tibble() %>%
-                mutate_at('reportdate', parsear_fechas) 
- 
- # transformar tabla ttks modificando formato de fechas
- ttk.1 <-      ttk %>%
-               as_tibble() %>%
-               mutate_at('changedate', parsear_fechas)
+ # # transformar incidentes modificando formatos de fechas
+ # incidents.1 <- incidents %>%
+ #                as_tibble() %>%
+ #                mutate_at('reportdate', parsear_fechas) 
+ # 
+ # # transformar tabla ttks modificando formato de fechas
+ # ttk.1 <-      ttk %>%
+ #               as_tibble() %>%
+ #               mutate_at('changedate', parsear_fechas)
  
  # crear tabla maestra
- mttr.1 <-      ttk.1 %>%
-                left_join(incidents.1, by = 'ticketid') %>%
+ mttr.1 <-      ttk %>%
+                left_join(incidents, by = 'ticketid') %>%
                 mutate(decimal_duration = hms_to_decimal(statustracking)) %>%
+                mutate_at(vars(reportdate, changedate), ymd_hms, tz = 'America/Guatemala') %>%
                 filter(decimal_duration > 0,
                        !is.na(decimal_duration),
                        status == 'INPROG',
@@ -99,16 +106,19 @@
   #                      data.table = FALSE)
  
  ownergroups     <- sqlQuery(channel = con, 
-                        query   = 'SELECT
-                        OWNERGROUP
-                        FROM shd.contratista_owner_group WHERE ACTIVO = 1',
-                        na.strings = '',
-                        stringsAsFactors = FALSE)
+                             query   = 'SELECT O.ownergroup,
+                              C.NOMBRE empresa, O.sede, C.PLANTA area,
+                              O.MTTR_TARGET target, O.region,
+                              O.TEC_SOLUTION tec_solution
+                              FROM SHD.CONTRATISTA_OWNER_GROUP O
+                              JOIN SHD.CONTRATISTA C ON O.CONTRATISTA_ID = C.ID',
+                             na.strings = '',
+                             stringsAsFactors = FALSE)
  
  
  # dejar solo los ownergroups que estan en el listado
   mttr.2 <- mttr.1 %>%
-            filter(mttr.1$ownergroup %in% ownergroups$include)
+            filter(mttr.1$ownergroup %in% ownergroups$ownergroup)
 
 ##  ............................................................................
 ##  EXCLUIR REGISTROS QUE NO APLIQUEN                                       ####
@@ -160,13 +170,14 @@
                             no   = mttr.3$decimal_duration))
   }  
         
-          
+ 
+            
 ##  ............................................................................
 ##  PROCESAR LA INFORMACION DE FAILURE REPORT PARA TIGO STAR                ####
 
  # definir columnas necesarias
  tigo_star.1 <-  sqlQuery(channel     = con, 
-                                query = 'SELECT
+                                query = "SELECT
                                          FAILURE_REPORT.TICKETID,
                                          FAILURE_REPORT.TYPE,
                                          FAILURE_REPORT.DESCRIPTION,
@@ -174,7 +185,9 @@
                                          FROM TIVOLI.FAILURE_REPORT
                                          JOIN TIVOLI.INCIDENT ON
                                          TIVOLI.FAILURE_REPORT.TICKETID =
-                                         TIVOLI.INCIDENT.TICKETID',
+                                         TIVOLI.INCIDENT.TICKETID WHERE 
+                                          TIVOLI.INCIDENT.REPORTDATE BETWEEN '2017-07-15 17:05:00'
+                                          AND '2017-07-25 23:59:00'",
                             na.strings = '',
                       stringsAsFactors = FALSE)
  
@@ -199,7 +212,7 @@
         
   # Remover categorias
   tigo_star.3 <- tigo_star.2 %>%
-                 filter(!(tigo_star.2$rca_ts %in% rm.ts$categoria))
+                 filter((tigo_star.2$rca_ts %in% rm.ts$categoria))
 
 ### . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ..
 ### DEFINIR ORDEN FINAL DE COLUMNAS                                         ####
@@ -219,6 +232,7 @@
                              'area',
                              'target',
                              'region',
+                             'tec_solution',
                              'rca_ts',
                              'ttk_tigo_star',
                              'reportedpriority',
@@ -230,26 +244,32 @@
 ##  AGREGAR INFORMACION OWNERGROUPS Y TIGO STAR                             ####
 
  # cargar tabla lookup de ownergroups que deben compararse
- info.grupos <- fread(input      = './files/06.- info_grupos.csv',
-                      data.table = FALSE)
+ # info.grupos <- fread(input      = './files/06.- info_grupos.csv',
+ #                      data.table = FALSE)
+  
+  
  
  # fusionar todo
  mttr.5 <-      mttr.4 %>%
-                left_join(info.grupos, by = 'ownergroup') %>%
+                left_join(ownergroups, by = 'ownergroup') %>%
                 left_join(tigo_star.3, by = 'ticketid')   %>%
                 select(FinalOrder)
+  
+ mttr.5$ttk_tigo_star <- ifelse(test = is.na(mttr.5$ttk_tigo_star), yes = 'SI APLICA', no = mttr.5$ttk_tigo_star)
  
-##  ............................................................................
+ write.csv(x = mttr.5, file = 'mttr_prueba.csv', row.names = FALSE)
+  
+  
+  ##  ............................................................................
 ##  PREPARAR Y GUARDAR TABLA EN BD                                          ####
 
- # modificar los formatos de fecha para que sean texto       
- mttr.6 <- mttr.5 %>% mutate_if(is.POSIXct, as.character)
+ 
 
  # cerrar conexion
  close(con)
  
  # borrar objetos innecesarios                  
- rm(list = setdiff(ls(), 'mttr.6'))
+ rm(list = setdiff(ls(), 'mttr.5'))
  
  
 
