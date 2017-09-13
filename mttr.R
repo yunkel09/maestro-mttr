@@ -32,7 +32,7 @@
                                          RELATEDTOGLOBAL
                                          FROM TIVOLI.INCIDENT WHERE
                                          REPORTDATE BETWEEN '2017-07-15 17:05:59'
-                                         AND '2017-08-25 23:59:59'",
+                                         AND '2017-09-09 23:59:59'",
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
@@ -51,7 +51,7 @@
                                           TICKETID
                                           FROM TIVOLI.INCIDENT WHERE
                                           REPORTDATE BETWEEN '2017-07-15 17:05:59'
-                                          AND '2017-08-25 23:59:59')",
+                                          AND '2017-09-09 23:59:59')",
                          na.strings = '',
                          stringsAsFactors = FALSE)
   
@@ -74,16 +74,6 @@
                              'isglobal',
                              'relatedtoglobal')
 
- # # transformar incidentes modificando formatos de fechas
- # incidents.1 <- incidents %>%
- #                as_tibble() %>%
- #                mutate_at('reportdate', parsear_fechas) 
- # 
- # # transformar tabla ttks modificando formato de fechas
- # ttk.1 <-      ttk %>%
- #               as_tibble() %>%
- #               mutate_at('changedate', parsear_fechas)
- 
  # crear tabla maestra
  mttr.1 <-      ttk %>%
                 left_join(incidents, by = 'ticketid') %>%
@@ -101,10 +91,6 @@
 ##  ............................................................................
 ##  FILTRADO POR OWNERGROUPS VALIDOS                                        ####
 
- # cargar catalogo de ownergroups validos
-  # ownergroups <- fread(input      = './files/01.- valid_ownergroups.csv',
-  #                      data.table = FALSE)
- 
  ownergroups     <- sqlQuery(channel = con, 
                              query   = 'SELECT O.ownergroup,
                               C.NOMBRE empresa, O.sede, C.PLANTA area,
@@ -187,7 +173,7 @@
                                          TIVOLI.FAILURE_REPORT.TICKETID =
                                          TIVOLI.INCIDENT.TICKETID WHERE 
                                           TIVOLI.INCIDENT.REPORTDATE BETWEEN '2017-07-15 17:05:00'
-                                          AND '2017-07-25 23:59:00'",
+                                          AND '2017-09-09 23:59:59'",
                             na.strings = '',
                       stringsAsFactors = FALSE)
  
@@ -196,7 +182,7 @@
  # procesar tabla
  tigo_star.2 <- tigo_star.1 %>%
                 filter(siteid == "TH",
-                       type    == "CAUSE",
+                       type    == "CAUSE", 
                        !is.na(description)) %>%
                 mutate_at('description', toupper) %>%
                 mutate(ttk_tigo_star = "NO APLICA") %>%
@@ -255,7 +241,9 @@
                 left_join(tigo_star.3, by = 'ticketid')   %>%
                 select(FinalOrder)
   
- mttr.5$ttk_tigo_star <- ifelse(test = is.na(mttr.5$ttk_tigo_star), yes = 'SI APLICA', no = mttr.5$ttk_tigo_star)
+ mttr.5$ttk_tigo_star <- ifelse(test = is.na(mttr.5$ttk_tigo_star),
+                                yes  = 'SI APLICA',
+                                no   = mttr.5$ttk_tigo_star)
  
  write.csv(x = mttr.5, file = 'mttr_prueba.csv', row.names = FALSE)
   

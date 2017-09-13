@@ -163,7 +163,9 @@
                    mutate_at('description', str_sub, star = 1, end = 40)
     
                    
-  maestro$ttk_tigo_star <- ifelse(test = maestro$ttk_tigo_star == 'SI' | is.na(maestro$ttk_tigo_star), yes = 'SI APLICA', no = 'NO APLICA')                 
+  maestro$ttk_tigo_star <- ifelse(test = maestro$ttk_tigo_star == 'SI' |
+                                    is.na(maestro$ttk_tigo_star),
+                                  yes = 'SI APLICA', no = 'NO APLICA')                 
                   
                         
   
